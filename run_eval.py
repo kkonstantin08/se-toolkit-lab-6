@@ -93,7 +93,7 @@ def _fetch_question(api_url: str, auth: str, lab: str, index: int):
         sys.exit(1)
 
 
-def _run_agent(question: str, timeout: int = 60):
+def _run_agent(question: str, timeout: int = 180):
     """Run agent.py with the question. Returns (answer_dict, error_msg)."""
     try:
         result = subprocess.run(
