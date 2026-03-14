@@ -31,6 +31,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 
 def _load_env():
     """Load variables from .env file (simple key=value parser)."""
@@ -96,14 +98,38 @@ def _fetch_question(api_url: str, auth: str, lab: str, index: int):
 def _run_agent(question: str, timeout: int = 180):
     """Run agent.py with the question. Returns (answer_dict, error_msg)."""
     try:
+        # Get the directory containing run_eval.py (project root)
+        project_root = Path(__file__).parent
+        
+        # Load environment variables from .env files
+        # Load .env first (for autochecker credentials)
+        env_file = project_root / ".env"
+        if env_file.exists():
+            load_dotenv(env_file)
+        
+        # Load .env.docker.secret for LMS_API_KEY
+        docker_env_file = project_root / ".env.docker.secret"
+        if docker_env_file.exists():
+            load_dotenv(docker_env_file, override=False)
+        
+        # Load .env.agent.secret for LLM credentials
+        agent_env_file = project_root / ".env.agent.secret"
+        if agent_env_file.exists():
+            load_dotenv(agent_env_file, override=False)
+        
+        # Pass environment to subprocess
+        env = os.environ.copy()
+        
         result = subprocess.run(
-            [sys.executable, "agent.py", question],
+            [sys.executable, str(project_root / "agent.py"), question],
             capture_output=True,
             text=True,
             timeout=timeout,
+            cwd=str(project_root),
+            env=env,
         )
     except subprocess.TimeoutExpired:
-        return None, "Agent timed out (60s)"
+        return None, "Agent timed out (180s)"
     except FileNotFoundError:
         return None, "agent.py not found"
 

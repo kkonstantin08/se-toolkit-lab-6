@@ -29,13 +29,13 @@ MAX_TOOL_CALLS = 30
 
 
 def load_config() -> dict[str, str]:
-    """Загружает конфигурацию из .env.agent.secret и .env.docker.secret."""
-    # Загружаем .env.agent.secret для LLM конфигурации
+    """Загружает конфигурацию из .env.agent.secret и .env.docker.secret или environment variables."""
+    # Загружаем .env.agent.secret для LLM конфигурации (если существует)
     agent_env_file = Path(__file__).parent / ".env.agent.secret"
     if agent_env_file.exists():
         load_dotenv(agent_env_file)
 
-    # Загружаем .env.docker.secret для backend API конфигурации
+    # Загружаем .env.docker.secret для backend API конфигурации (если существует)
     docker_env_file = Path(__file__).parent / ".env.docker.secret"
     if docker_env_file.exists():
         load_dotenv(docker_env_file, override=False)
@@ -48,14 +48,15 @@ def load_config() -> dict[str, str]:
         "agent_api_base_url": os.getenv("AGENT_API_BASE_URL", "http://localhost:42002"),
     }
 
+    # Проверяем наличие обязательных переменных (могут быть инжектнуты авточекером)
     if not config["llm_api_key"]:
-        print("Ошибка: LLM_API_KEY не указан в .env.agent.secret", file=sys.stderr)
+        print("Ошибка: LLM_API_KEY не указан", file=sys.stderr)
         sys.exit(1)
     if not config["llm_api_base"]:
-        print("Ошибка: LLM_API_BASE не указан в .env.agent.secret", file=sys.stderr)
+        print("Ошибка: LLM_API_BASE не указан", file=sys.stderr)
         sys.exit(1)
     if not config["llm_model"]:
-        print("Ошибка: LLM_MODEL не указан в .env.agent.secret", file=sys.stderr)
+        print("Ошибка: LLM_MODEL не указан", file=sys.stderr)
         sys.exit(1)
     if "<your-vm-ip>" in config["llm_api_base"] or "<qwen-api-port>" in config["llm_api_base"]:
         print(
