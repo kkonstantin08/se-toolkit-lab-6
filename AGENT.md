@@ -158,34 +158,15 @@ The agent uses an iterative loop to answer questions:
 
 ### System Prompt Strategy
 
-The system prompt guides the LLM to choose the right tool based on question type:
+The current system prompt introduces all three knowledge sources (wiki, the running backend API, and relevant source code) and explicitly lists the available tools (`list_files`, `read_file`, and `query_api`). The prompt instructs the LLM to choose the right tool depending on the question:
 
-1. **Wiki/documentation questions** → use `read_file` or `list_files`
-2. **System facts** (framework, ports, status codes) → use `query_api` or `read_file` on source code
-3. **Data queries** (item count, scores, analytics) → use `query_api`
-4. **Bug diagnosis** → use `query_api` to reproduce error, then `read_file` to find the bug
+1. **Documentation or architecture** questions → start with `read_file`/`list_files` on the wiki/docs.
+2. **System facts** (framework, ports, routers, status codes) → inspect source code or call `query_api` endpoints that expose metadata or headers.
+3. **Data-dependent** questions (counts, rates, learners, analytics, status codes) → call `query_api`, mention the endpoint path, describe how you counted the items (array length or field values), and include the numeric result.
+4. **Bug diagnosis** (errors, completion rate, top learners, analytics crashes) → first reproduce via `query_api` (capture status_code/body), then read `backend/app/routers/analytics.py` (or the relevant router) and highlight risky operations such as division, division by zero, or sorting values that can be `None`.
+5. **"List all" questions** → call `list_files`, read each relevant file, and summarize the modules.
 
-**Example system prompt:**
-```
-You are a documentation and system assistant that answers questions based on:
-- Project wiki (use read_file, list_files)
-- Running backend API (use query_api)
-- Source code (use read_file)
-
-When answering:
-1. For wiki/documentation questions → use read_file or list_files
-2. For system facts (framework, ports, status codes) → use query_api or read_file on source code
-3. For data queries (item count, scores, analytics) → use query_api
-4. For bug diagnosis → use query_api to reproduce error, then read_file to find the bug
-
-For wiki files:
-- Include the source reference (file path + section anchor) in your answer
-- Format: wiki/filename.md#section-anchor
-
-For API queries:
-- Mention the endpoint in your answer
-- Source is optional (use "system" or omit)
-```
+The prompt also reminds the LLM to use full paths, mention endpoints when citing API data, include wiki sources in the form `wiki/file.md#section`, and format the final response as JSON (`{"answer": "...", "source": "..."}`) so downstream automation can parse it reliably.
 
 ### Max Iterations
 
@@ -316,6 +297,11 @@ Tests verify:
 - Reasoning questions (request lifecycle, ETL idempotency)
 
 ---
+
+### Local benchmark status
+
+- Attempted to run `uv run run_eval.py`, but the tool failed to initialize `C:\Users\user\AppData\Local\uv\cache` because the path already existed (os error 183) before any questions were submitted.
+- The same error persists after pointing `UV_CACHE` at the workspace, so the host cache path needs to be removed or renamed before rerunning the benchmark.
 
 ## Lessons Learned
 

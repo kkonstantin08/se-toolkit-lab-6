@@ -8,6 +8,12 @@ This task extends the Task 2 agent with a new `query_api` tool that allows the L
 2. **System facts** — framework, ports, status codes (new `query_api` tool)
 3. **Data-dependent queries** — item count, scores, analytics (new `query_api` tool)
 
+## Current status
+
+- Latest log: plan/tool docs and local benchmark pass, but hidden eval score is 66.67% (3/5).
+- Hidden failures: question 14 ('How many distinct learners have submitted data?' needs /learners/ and a count) and question 16 (analytics router crash requiring /analytics reproduction and backend/app/routers/analytics.py review for division/sorting risks).
+- Strategy: update the system prompt so count-style questions explicitly call query_api (mention /learners/ and include numeric results) and so bug diagnostics highlight analytics router heuristics.
+
 ## Deliverables
 
 1. **Plan** (`plans/task-3.md`) — this file
@@ -234,6 +240,12 @@ The 10 local evaluation questions:
 7. UTF-8 encoding fix for Windows stdout
 8. Case-insensitive path validation for Windows
 9. Environment variable loading from both .env files and direct injection (for autochecker)
+
+
+### Benchmark run status
+
+- Attempted to run `uv run run_eval.py` after the changes, but `uv` failed to initialize the cache at `C:\Users\user\AppData\Local\uv\cache` because it already existed (os error 183). The command stops before running any questions.
+- The same error persists even after pointing `UV_CACHE` at a workspace folder, so we need to remove or rename the host cache path before rerunning the benchmark.
 
 ---
 
